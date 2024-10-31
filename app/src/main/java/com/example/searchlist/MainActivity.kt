@@ -14,6 +14,8 @@ class MainActivity : AppCompatActivity() {
     var listResult: ListView? = null
     var searchBox: SearchView? = null
     private lateinit var studentAdapter: ArrayAdapter<String>
+    private lateinit var originalList: MutableList<String>
+    private lateinit var filteredList: MutableList<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,16 +26,14 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        val studentList = getStudentList()
+
+        originalList = getStudentList()
+        filteredList = originalList.toMutableList()
+
         listResult = findViewById(R.id.listResult)
         searchBox = findViewById(R.id.searchBox)
 
-        if (listResult == null || searchBox == null) {
-            Log.e("MainActivity", "ListView hoặc SearchView không được tìm thấy.")
-            return
-        }
-
-        studentAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, studentList)
+        studentAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, filteredList)
         listResult?.adapter = studentAdapter
 
         searchBox?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -43,28 +43,28 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 try {
-                    val filteredList = if (newText != null && newText.length > 2) {
-                        studentList.filter {
-                            it.contains(newText, ignoreCase = true)
-                        }
+                    filteredList.clear()
+
+                    if (newText.isNullOrEmpty() || newText.length <= 2) {
+                        filteredList.addAll(originalList)
                     } else {
-                        studentList
+                        filteredList.addAll(originalList.filter {
+                            it.contains(newText, ignoreCase = true)
+                        })
                     }
-                    studentAdapter.clear()
-                    studentAdapter.addAll(filteredList)
+
                     studentAdapter.notifyDataSetChanged()
                     return true
-                }
-                catch(e : Exception) {
-                    Log.i("ERROR", "${e.message}")
+                } catch (e: Exception) {
+                    Log.e("Search", "Error filtering list", e)
                     return false
                 }
             }
         })
     }
 
-    private fun getStudentList(): List<String>{
-        return listOf(
+    private fun getStudentList(): MutableList<String>{
+        return mutableListOf(
             "Nguyen Van A - 20210001",
             "Le Huu B - 20210002",
             "Le Van C - 20210003",
